@@ -1,0 +1,100 @@
+{
+  "name": "diagnostics-export",
+  "displayName": "Diagnostics Export",
+  "description": "Automatically export VS Code diagnostics (Problems pane) to multiple formats for AI coding assistants",
+  "version": "0.1.0",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "diagnosticsExport.exportNow",
+        "title": "Export Diagnostics Now",
+        "category": "Diagnostics Export"
+      },
+      {
+        "command": "diagnosticsExport.toggleAutoExport",
+        "title": "Toggle Auto Export",
+        "category": "Diagnostics Export"
+      },
+      {
+        "command": "diagnosticsExport.openExportFolder",
+        "title": "Open Export Folder",
+        "category": "Diagnostics Export"
+      }
+    ],
+    "configuration": {
+      "title": "Diagnostics Export",
+      "properties": {
+        "diagnosticsExport.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the diagnostics export extension"
+        },
+        "diagnosticsExport.autoExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically export diagnostics when they change"
+        },
+        "diagnosticsExport.formats": {
+          "type": "array",
+          "default": ["json", "markdown"],
+          "items": {
+            "type": "string",
+            "enum": ["json", "markdown", "text"]
+          },
+          "description": "Export formats to generate"
+        },
+        "diagnosticsExport.outputPath": {
+          "type": "string",
+          "default": "${workspaceFolder}/.vscode/diagnostics",
+          "description": "Output path for exported diagnostics files"
+        },
+        "diagnosticsExport.debounceDelay": {
+          "type": "number",
+          "default": 500,
+          "description": "Delay in milliseconds before exporting after diagnostics change"
+        },
+        "diagnosticsExport.severityFilter": {
+          "type": "string",
+          "default": "all",
+          "enum": ["all", "errorsOnly", "errorsAndWarnings"],
+          "description": "Filter diagnostics by severity"
+        },
+        "diagnosticsExport.excludeSources": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Diagnostic sources to exclude from export"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}
