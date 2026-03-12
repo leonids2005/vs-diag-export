@@ -313,6 +313,18 @@ None at this time. Please report issues on the GitHub repository.
 
 ## Release Notes
 
+### 0.2.0
+
+**Major architectural change - Per-file export with mirrored source tree:**
+- **Breaking Change**: Diagnostics now exported per-file instead of aggregated
+- Mirrored directory structure (`.diagnostics/` mirrors source tree)
+- Optimized for AI coding assistants (targeted reads, always fresh)
+- Improved scalability for large projects
+- Changed default output path to `${workspaceFolder}/.diagnostics`
+- Changed default format to `["json"]` only
+- Only exports files that have diagnostics changes (efficient)
+- Added `.diagnostics/` to gitignore
+
 ### 0.1.0
 
 Initial release:

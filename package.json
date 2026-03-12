@@ -2,8 +2,8 @@
   "name": "diagnostics-export",
   "displayName": "Diagnostics Export",
   "description": "Automatically export VS Code diagnostics (Problems pane) to multiple formats for AI coding assistants",
-  "version": "0.1.0",
-  "publisher": "your-publisher-name",
+  "version": "0.2.0",
+  "publisher": "mironyx",
   "license": "MIT",
   "repository": {
     "type": "git",
