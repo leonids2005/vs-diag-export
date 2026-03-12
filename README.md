@@ -313,6 +313,12 @@ None at this time. Please report issues on the GitHub repository.
 
 ## Release Notes
 
+### 0.2.1
+
+**Bug fix:**
+- Fixed: Diagnostics files are now properly deleted when all issues in a file are resolved
+- Previously, files would update but not delete when the last diagnostic was fixed
+
 ### 0.2.0
 
 **Major architectural change - Per-file export with mirrored source tree:**
