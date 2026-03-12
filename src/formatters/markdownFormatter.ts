@@ -1,14 +1,13 @@
-import { DiagnosticExport, DiagnosticInfo, IFormatter } from '../types';
+import { FileDiagnosticExport, DiagnosticInfo, IFormatter } from '../types';
 
 export class MarkdownFormatter implements IFormatter {
-    format(data: DiagnosticExport): string {
+    format(data: FileDiagnosticExport): string {
         const lines: string[] = [];
         
-        lines.push('# Diagnostics Export');
+        lines.push(`# Diagnostics: ${data.file}`);
         lines.push('');
-        lines.push(`**Exported:** ${new Date(data.exportedAt).toLocaleString()}`);
-        lines.push('');
-        lines.push(`**Total:** ${data.totalCount} (${data.errorCount} errors, ${data.warningCount} warnings, ${data.infoCount} info, ${data.hintCount} hints)`);
+        lines.push(`**Analyzed:** ${new Date(data.analyzedAt).toLocaleString()}`);
+        lines.push(`**Total Issues:** ${data.diagnostics.length}`);
         lines.push('');
 
         if (data.diagnostics.length === 0) {
@@ -16,71 +15,43 @@ export class MarkdownFormatter implements IFormatter {
             return lines.join('\n');
         }
 
-        const groupedByFile = this.groupByFile(data.diagnostics);
-        const groupedBySeverity = this.groupBySeverity(groupedByFile);
+        const groupedBySeverity = this.groupBySeverity(data.diagnostics);
 
-        for (const [severity, files] of Object.entries(groupedBySeverity)) {
-            const count = Object.values(files).reduce((sum, diags) => sum + diags.length, 0);
-            lines.push(`## ${severity} (${count})`);
-            lines.push('');
-
-            for (const [file, diagnostics] of Object.entries(files)) {
-                lines.push(`### ${file}`);
-                lines.push('');
-                
-                for (const diag of diagnostics) {
-                    const codeStr = diag.code ? ` [${diag.source}:${diag.code}]` : (diag.source ? ` [${diag.source}]` : '');
-                    lines.push(`- **Line ${diag.line}, Col ${diag.column}:** ${diag.message}${codeStr}`);
-                }
-                
-                lines.push('');
+        for (const [severity, diagnostics] of Object.entries(groupedBySeverity)) {
+            if (diagnostics.length === 0) {
+                continue;
             }
+
+            lines.push(`## ${severity} (${diagnostics.length})`);
+            lines.push('');
+            
+            for (const diag of diagnostics) {
+                const codeStr = diag.code ? ` [${diag.source}:${diag.code}]` : (diag.source ? ` [${diag.source}]` : '');
+                lines.push(`- **Line ${diag.line}, Col ${diag.column}:** ${diag.message}${codeStr}`);
+            }
+            
+            lines.push('');
         }
 
         return lines.join('\n');
     }
 
-    private groupByFile(diagnostics: DiagnosticInfo[]): Record<string, DiagnosticInfo[]> {
-        const grouped: Record<string, DiagnosticInfo[]> = {};
-        
-        for (const diag of diagnostics) {
-            if (!grouped[diag.file]) {
-                grouped[diag.file] = [];
-            }
-            grouped[diag.file].push(diag);
-        }
-        
-        return grouped;
-    }
-
-    private groupBySeverity(fileGroups: Record<string, DiagnosticInfo[]>): Record<string, Record<string, DiagnosticInfo[]>> {
+    private groupBySeverity(diagnostics: DiagnosticInfo[]): Record<string, DiagnosticInfo[]> {
         const severityOrder = ['Error', 'Warning', 'Information', 'Hint'];
-        const result: Record<string, Record<string, DiagnosticInfo[]>> = {};
+        const result: Record<string, DiagnosticInfo[]> = {};
 
         for (const severity of severityOrder) {
-            result[severity] = {};
+            result[severity] = [];
         }
 
-        for (const [file, diagnostics] of Object.entries(fileGroups)) {
-            for (const diag of diagnostics) {
-                if (!result[diag.severity]) {
-                    result[diag.severity] = {};
-                }
-                if (!result[diag.severity][file]) {
-                    result[diag.severity][file] = [];
-                }
-                result[diag.severity][file].push(diag);
+        for (const diag of diagnostics) {
+            if (!result[diag.severity]) {
+                result[diag.severity] = [];
             }
+            result[diag.severity].push(diag);
         }
 
-        const filtered: Record<string, Record<string, DiagnosticInfo[]>> = {};
-        for (const [severity, files] of Object.entries(result)) {
-            if (Object.keys(files).length > 0) {
-                filtered[severity] = files;
-            }
-        }
-
-        return filtered;
+        return result;
     }
 
     getFileExtension(): string {

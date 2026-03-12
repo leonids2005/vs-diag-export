@@ -1,22 +1,17 @@
 import * as vscode from 'vscode';
 
 export interface DiagnosticInfo {
-    file: string;
-    line: number;
-    column: number;
+    source?: string;
     severity: string;
     message: string;
-    source?: string;
+    line: number;
+    column: number;
     code?: string | number;
 }
 
-export interface DiagnosticExport {
-    exportedAt: string;
-    totalCount: number;
-    errorCount: number;
-    warningCount: number;
-    infoCount: number;
-    hintCount: number;
+export interface FileDiagnosticExport {
+    file: string;
+    analyzedAt: string;
     diagnostics: DiagnosticInfo[];
 }
 
@@ -31,6 +26,6 @@ export interface ExportConfig {
 }
 
 export interface IFormatter {
-    format(data: DiagnosticExport): string;
+    format(data: FileDiagnosticExport): string;
     getFileExtension(): string;
 }

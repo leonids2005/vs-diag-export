@@ -4,6 +4,11 @@
   "description": "Automatically export VS Code diagnostics (Problems pane) to multiple formats for AI coding assistants",
   "version": "0.1.0",
   "publisher": "your-publisher-name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/vs-diag-export.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -47,17 +52,17 @@
         },
         "diagnosticsExport.formats": {
           "type": "array",
-          "default": ["json", "markdown"],
+          "default": ["json"],
           "items": {
             "type": "string",
             "enum": ["json", "markdown", "text"]
           },
-          "description": "Export formats to generate"
+          "description": "Export formats to generate (per-file exports)"
         },
         "diagnosticsExport.outputPath": {
           "type": "string",
-          "default": "${workspaceFolder}/.vscode/diagnostics",
-          "description": "Output path for exported diagnostics files"
+          "default": "${workspaceFolder}/.diagnostics",
+          "description": "Base output path for mirrored diagnostics tree"
         },
         "diagnosticsExport.debounceDelay": {
           "type": "number",
@@ -87,7 +92,10 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "build": "npm run compile && npm run package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

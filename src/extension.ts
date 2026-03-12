@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const exportNowCommand = vscode.commands.registerCommand('diagnosticsExport.exportNow', async () => {
         if (exporter) {
-            await exporter.exportDiagnostics();
+            await exporter.exportAllDiagnostics();
             vscode.window.showInformationMessage('Diagnostics exported successfully');
         }
     });

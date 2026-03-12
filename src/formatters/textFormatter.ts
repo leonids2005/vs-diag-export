@@ -1,13 +1,13 @@
-import { DiagnosticExport, IFormatter } from '../types';
+import { FileDiagnosticExport, IFormatter } from '../types';
 
 export class TextFormatter implements IFormatter {
-    format(data: DiagnosticExport): string {
+    format(data: FileDiagnosticExport): string {
         const lines: string[] = [];
         
-        lines.push('DIAGNOSTICS EXPORT');
+        lines.push(`DIAGNOSTICS: ${data.file}`);
         lines.push('='.repeat(80));
-        lines.push(`Exported: ${new Date(data.exportedAt).toLocaleString()}`);
-        lines.push(`Total: ${data.totalCount} (${data.errorCount} errors, ${data.warningCount} warnings, ${data.infoCount} info, ${data.hintCount} hints)`);
+        lines.push(`Analyzed: ${new Date(data.analyzedAt).toLocaleString()}`);
+        lines.push(`Total Issues: ${data.diagnostics.length}`);
         lines.push('='.repeat(80));
         lines.push('');
 
@@ -18,7 +18,7 @@ export class TextFormatter implements IFormatter {
 
         for (const diag of data.diagnostics) {
             const codeStr = diag.code ? ` [${diag.source}:${diag.code}]` : (diag.source ? ` [${diag.source}]` : '');
-            lines.push(`[${diag.severity}] ${diag.file}:${diag.line}:${diag.column}`);
+            lines.push(`[${diag.severity}] Line ${diag.line}, Col ${diag.column}`);
             lines.push(`  ${diag.message}${codeStr}`);
             lines.push('');
         }

@@ -1,7 +1,7 @@
-import { DiagnosticExport, IFormatter } from '../types';
+import { FileDiagnosticExport, IFormatter } from '../types';
 
 export class JsonFormatter implements IFormatter {
-    format(data: DiagnosticExport): string {
+    format(data: FileDiagnosticExport): string {
         return JSON.stringify(data, null, 2);
     }
 
