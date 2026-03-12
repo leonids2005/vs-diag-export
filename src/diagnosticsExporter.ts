@@ -35,6 +35,7 @@ export class DiagnosticsExporter {
             return;
         }
 
+
         for (const uri of event.uris) {
             this.changedFiles.add(uri.toString());
         }
@@ -84,13 +85,14 @@ export class DiagnosticsExporter {
         try {
             const diagnostics = vscode.languages.getDiagnostics(uri);
             const fileDiagnostics = this.collectFileDiagnostics(uri, diagnostics, config);
+            const outputBasePath = this.resolveOutputPath(config.outputPath);
             
             if (!fileDiagnostics) {
+                // No diagnostics - delete existing diagnostics files
+                await this.deleteFileExports(outputBasePath, uri, config.formats);
                 return;
             }
 
-            const outputBasePath = this.resolveOutputPath(config.outputPath);
-            
             for (const format of config.formats) {
                 const formatter = this.formatters.get(format);
                 if (formatter) {
@@ -224,6 +226,31 @@ export class DiagnosticsExporter {
         const uri = vscode.Uri.file(outputFilePath);
         
         await vscode.workspace.fs.writeFile(uri, buffer);
+    }
+
+    private async deleteFileExports(outputBasePath: string, fileUri: vscode.Uri, formats: string[]): Promise<void> {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
+        if (!workspaceFolder) {
+            return;
+        }
+
+        const relativePath = path.relative(workspaceFolder.uri.fsPath, fileUri.fsPath);
+
+        for (const format of formats) {
+            const formatter = this.formatters.get(format);
+            if (formatter) {
+                const outputFileName = `${relativePath}.${formatter.getFileExtension()}`;
+                const outputFilePath = path.join(outputBasePath, outputFileName);
+                const uri = vscode.Uri.file(outputFilePath);
+
+                try {
+                    await vscode.workspace.fs.delete(uri);
+                    console.log(`Deleted diagnostics file: ${outputFilePath}`);
+                } catch (error) {
+                    // File might not exist, which is fine
+                }
+            }
+        }
     }
 
     private getConfig(): ExportConfig {
