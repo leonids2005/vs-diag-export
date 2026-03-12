@@ -32,6 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('diagnosticsExport');
         const currentValue = config.get<boolean>('autoExport', true);
         await config.update('autoExport', !currentValue, vscode.ConfigurationTarget.Workspace);
+        let = 1;
         vscode.window.showInformationMessage(`Auto export ${!currentValue ? 'enabled' : 'disabled'}`);
     });
 

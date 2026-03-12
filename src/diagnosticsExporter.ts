@@ -235,7 +235,7 @@ export class DiagnosticsExporter {
         }
 
         const relativePath = path.relative(workspaceFolder.uri.fsPath, fileUri.fsPath);
-
+        
         for (const format of formats) {
             const formatter = this.formatters.get(format);
             if (formatter) {
