@@ -185,22 +185,123 @@ Example AI workflow:
 
 ### Building from Source
 
+#### Prerequisites
+- Node.js 20.x or higher
+- npm (comes with Node.js)
+- Git
+
+#### Build Steps
+
 ```bash
+# Clone the repository (if not already cloned)
+git clone https://github.com/your-username/vs-diag-export.git
+cd vs-diag-export
+
+# Install dependencies
 npm install
+
+# Compile TypeScript to JavaScript
 npm run compile
+
+# Watch mode (auto-compile on file changes)
+npm run watch
 ```
 
-### Running the Extension
+### Building VSIX Package
+
+To create an installable `.vsix` package:
+
+```bash
+# Install vsce globally (one-time setup)
+npm install -g @vscode/vsce
+
+# Build the VSIX package
+npm run package
+# or
+vsce package
+
+# Output: diagnostics-export-0.1.0.vsix
+```
+
+### Installing Locally
+
+After building the VSIX:
+
+**Option 1: Via VS Code UI**
+1. Open VS Code
+2. Go to Extensions (`Ctrl+Shift+X`)
+3. Click `...` menu → `Install from VSIX...`
+4. Select `diagnostics-export-0.1.0.vsix`
+
+**Option 2: Via Command Line**
+```bash
+code --install-extension diagnostics-export-0.1.0.vsix
+```
+
+### Running the Extension in Development Mode
 
 1. Open this folder in VS Code
 2. Press `F5` to launch Extension Development Host
-3. Test the extension in the new window
+3. A new VS Code window opens with the extension loaded
+4. Test the extension in the new window
+5. Check Debug Console for logs
+
+### Project Structure
+
+```
+vs-diag-export/
+├── src/                          # TypeScript source files
+│   ├── extension.ts              # Extension entry point
+│   ├── diagnosticsExporter.ts    # Core export logic
+│   ├── types.ts                  # TypeScript interfaces
+│   └── formatters/               # Export formatters
+│       ├── jsonFormatter.ts
+│       ├── markdownFormatter.ts
+│       └── textFormatter.ts
+├── out/                          # Compiled JavaScript (generated)
+├── package.json                  # Extension manifest
+├── tsconfig.json                 # TypeScript configuration
+└── .vscode/
+    ├── launch.json               # Debug configuration
+    └── tasks.json                # Build tasks
+```
+
+### Available Scripts
+
+```bash
+# Compile TypeScript
+npm run compile
+
+# Watch mode (auto-compile on changes)
+npm run watch
+
+# Lint code
+npm run lint
+
+# Build VSIX package
+npm run package
+
+# Full build (compile + package)
+npm run build
+
+# Publish to VS Code Marketplace
+npm run publish
+```
 
 ### Debugging
 
-- Set breakpoints in TypeScript files
-- Use the Debug Console to inspect variables
-- Check Output panel for extension logs
+- **Set breakpoints** in TypeScript files (`.ts`)
+- **Debug Console** shows extension logs and errors
+- **Output panel** → "Diagnostics Export" for runtime logs
+- **Reload window** (`Ctrl+R`) in Extension Development Host to reload changes
+
+### Testing Changes
+
+1. Make code changes in TypeScript files
+2. Save files (auto-compile if using watch mode)
+3. Reload Extension Development Host window (`Ctrl+R`)
+4. Test your changes
+5. Check Debug Console for errors
 
 ## Requirements
 
