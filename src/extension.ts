@@ -32,13 +32,12 @@ export function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('diagnosticsExport');
         const currentValue = config.get<boolean>('autoExport', true);
         await config.update('autoExport', !currentValue, vscode.ConfigurationTarget.Workspace);
-        let = 1;
         vscode.window.showInformationMessage(`Auto export ${!currentValue ? 'enabled' : 'disabled'}`);
     });
 
     const openExportFolderCommand = vscode.commands.registerCommand('diagnosticsExport.openExportFolder', async () => {
         const config = vscode.workspace.getConfiguration('diagnosticsExport');
-        const outputPath = config.get<string>('outputPath', '${workspaceFolder}/.vscode/diagnostics');
+        const outputPath = config.get<string>('outputPath', '${workspaceFolder}/.diagnostics');
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
         
         if (!workspaceFolder) {
@@ -84,7 +83,7 @@ function updateStatusBar(): void {
         statusBarItem.text = '$(check) No Problems';
         statusBarItem.tooltip = 'Click to export diagnostics';
     } else {
-        statusBarItem.text = `$(warning) ${errorCount} $(error) ${warningCount} $(warning)`;
+        statusBarItem.text = `$(error) ${errorCount} $(warning) ${warningCount}`;
         statusBarItem.tooltip = `${errorCount} errors, ${warningCount} warnings - Click to export`;
     }
 

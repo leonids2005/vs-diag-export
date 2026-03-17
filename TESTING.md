@@ -19,7 +19,7 @@
 2. New VS Code window opens with extension loaded
 3. Extension activates on startup
 4. Status bar shows diagnostic counts
-5. Diagnostics are automatically exported to `.vscode/diagnostics/`
+5. Diagnostics are automatically exported to `.diagnostics/` (mirrored per-file tree)
 
 ## Testing the Extension
 
@@ -39,9 +39,10 @@ function foo() {
 
 ### 2. Check Export Files
 
-Navigate to `.vscode/diagnostics/` in your workspace:
-- `diagnostics.json` - JSON format
-- `diagnostics.md` - Markdown format
+Navigate to `.diagnostics/` in your workspace. The structure mirrors your source tree:
+- `.diagnostics/test.ts.json` - JSON format (default)
+- `.diagnostics/test.ts.md` - Markdown format (if configured)
+- `.diagnostics/test.ts.txt` - Plain text format (if configured)
 
 ### 3. Test Commands
 
@@ -64,11 +65,13 @@ Open Command Palette (`Ctrl+Shift+P`) and try:
 
 ## Verifying It Works
 
-✅ Status bar shows diagnostic counts
-✅ Export files created in `.vscode/diagnostics/`
+✅ Status bar shows diagnostic counts (errors with error icon, warnings with warning icon)
+✅ Export files created in `.diagnostics/` mirroring source tree structure
 ✅ Files update when you add/remove errors
+✅ Export file is **deleted** when all issues in a file are resolved
 ✅ Commands appear in Command Palette
 ✅ No errors in Debug Console
+✅ Export activity visible in Output panel → "Diagnostics Export"
 
 ## Installing as VSIX (For Production Use)
 
@@ -79,7 +82,7 @@ To install permanently:
 npm install -g @vscode/vsce
 vsce package
 
-# This creates diagnostics-export-0.1.0.vsix
+# This creates diagnostics-export-0.2.6.vsix
 # Install it via:
 # Extensions > ... > Install from VSIX
 ```

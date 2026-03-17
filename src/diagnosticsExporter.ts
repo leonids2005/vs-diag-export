@@ -8,6 +8,10 @@ export class DiagnosticsExporter {
     private formatters: Map<string, IFormatter>;
     private disposables: vscode.Disposable[] = [];
     private changedFiles: Set<string> = new Set();
+    private outputChannel: vscode.OutputChannel;
+    private isExporting: boolean = false;
+    private pendingChangedFiles: boolean = false;
+    private lastExportTime: Map<string, number> = new Map();
 
     constructor() {
         this.formatters = new Map([
@@ -15,6 +19,7 @@ export class DiagnosticsExporter {
             ['markdown', new MarkdownFormatter()],
             ['text', new TextFormatter()]
         ]);
+        this.outputChannel = vscode.window.createOutputChannel('Diagnostics Export');
     }
 
     public activate(context: vscode.ExtensionContext): void {
@@ -50,13 +55,37 @@ export class DiagnosticsExporter {
     }
 
     private async exportChangedFiles(): Promise<void> {
-        const config = this.getConfig();
-        const filesToExport = Array.from(this.changedFiles);
-        this.changedFiles.clear();
+        if (this.isExporting) {
+            this.pendingChangedFiles = true;
+            this.outputChannel.appendLine('Export already in progress, changes queued...');
+            return;
+        }
 
-        for (const uriString of filesToExport) {
-            const uri = vscode.Uri.parse(uriString);
-            await this.exportFileDignostics(uri, config);
+        this.isExporting = true;
+        try {
+            do {
+                this.pendingChangedFiles = false;
+                const config = this.getConfig();
+                const filesToExport = Array.from(this.changedFiles);
+                this.changedFiles.clear();
+
+                const now = Date.now();
+                const minInterval = 1000; // Don't re-export same file within 1 second
+
+                for (const uriString of filesToExport) {
+                    const lastExport = this.lastExportTime.get(uriString);
+                    if (lastExport && (now - lastExport) < minInterval) {
+                        this.outputChannel.appendLine(`Skipping ${uriString} (exported ${now - lastExport}ms ago)`);
+                        continue;
+                    }
+
+                    const uri = vscode.Uri.parse(uriString);
+                    await this.exportFileDiagnostics(uri, config);
+                    this.lastExportTime.set(uriString, now);
+                }
+            } while (this.pendingChangedFiles);
+        } finally {
+            this.isExporting = false;
         }
     }
 
@@ -67,40 +96,93 @@ export class DiagnosticsExporter {
             return;
         }
 
+        if (this.isExporting) {
+            this.outputChannel.appendLine('Export already in progress, manual export queued...');
+            this.pendingChangedFiles = true;
+            return;
+        }
+
+        this.isExporting = true;
         try {
             const diagnostics = vscode.languages.getDiagnostics();
 
             for (const [uri] of diagnostics) {
-                await this.exportFileDignostics(uri, config);
+                await this.exportFileDiagnostics(uri, config);
             }
 
-            console.log(`All diagnostics exported`);
+            this.outputChannel.appendLine('All diagnostics exported');
         } catch (error) {
-            console.error('Failed to export diagnostics:', error);
+            this.outputChannel.appendLine(`Failed to export diagnostics: ${error}`);
             vscode.window.showErrorMessage(`Failed to export diagnostics: ${error}`);
+        } finally {
+            this.isExporting = false;
         }
     }
 
-    private async exportFileDignostics(uri: vscode.Uri, config: ExportConfig): Promise<void> {
+    private async exportFileDiagnostics(uri: vscode.Uri, config: ExportConfig): Promise<void> {
         try {
+            if (!this.shouldExportFile(uri, config)) {
+                return;
+            }
+
+            const outputBasePath = this.resolveOutputPath(config.outputPath);
             const diagnostics = vscode.languages.getDiagnostics(uri);
             const fileDiagnostics = this.collectFileDiagnostics(uri, diagnostics, config);
-            const outputBasePath = this.resolveOutputPath(config.outputPath);
             
             if (!fileDiagnostics) {
-                // No diagnostics - delete existing diagnostics files
+                this.outputChannel.appendLine(`No diagnostics for: ${uri.fsPath} - deleting export files`);
                 await this.deleteFileExports(outputBasePath, uri, config.formats);
                 return;
             }
 
-            for (const format of config.formats) {
-                const formatter = this.formatters.get(format);
-                if (formatter) {
-                    await this.writeFileExport(outputBasePath, uri, formatter, fileDiagnostics);
-                }
-            }
+            await this.writeFormattedDiagnostics(outputBasePath, uri, fileDiagnostics, config.formats);
         } catch (error) {
+            this.outputChannel.appendLine(`Failed to export diagnostics for ${uri.fsPath}: ${error}`);
             console.error(`Failed to export diagnostics for ${uri.fsPath}:`, error);
+        }
+    }
+
+    private shouldExportFile(uri: vscode.Uri, config: ExportConfig): boolean {
+        // Only export files that are within the workspace
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            return false;
+        }
+
+        // Skip non-file URIs (like virtual files, git schemes, etc.)
+        if (uri.scheme !== 'file') {
+            return false;
+        }
+
+        // Skip files inside .diagnostics folder to prevent recursive export
+        const outputBasePath = this.resolveOutputPath(config.outputPath);
+        if (this.isInsideOutputFolder(uri.fsPath, outputBasePath)) {
+            this.outputChannel.appendLine(`Skipping file in .diagnostics folder: ${uri.fsPath}`);
+            return false;
+        }
+
+        return true;
+    }
+
+    private isInsideOutputFolder(filePath: string, outputBasePath: string): boolean {
+        const normalizedOutputPath = path.normalize(outputBasePath).toLowerCase();
+        const normalizedFilePath = path.normalize(filePath).toLowerCase();
+        
+        return normalizedFilePath.startsWith(normalizedOutputPath + path.sep) || 
+               normalizedFilePath === normalizedOutputPath;
+    }
+
+    private async writeFormattedDiagnostics(
+        outputBasePath: string, 
+        uri: vscode.Uri, 
+        fileDiagnostics: FileDiagnosticExport, 
+        formats: string[]
+    ): Promise<void> {
+        for (const format of formats) {
+            const formatter = this.formatters.get(format);
+            if (formatter) {
+                await this.writeFileExport(outputBasePath, uri, formatter, fileDiagnostics);
+            }
         }
     }
 
@@ -211,6 +293,7 @@ export class DiagnosticsExporter {
     private async writeFileExport(outputBasePath: string, fileUri: vscode.Uri, formatter: IFormatter, data: FileDiagnosticExport): Promise<void> {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
         if (!workspaceFolder) {
+            this.outputChannel.appendLine(`Skipped (no workspace): ${fileUri.toString()}`);
             return;
         }
 
@@ -218,6 +301,10 @@ export class DiagnosticsExporter {
         const outputFileName = `${relativePath}.${formatter.getFileExtension()}`;
         const outputFilePath = path.join(outputBasePath, outputFileName);
         const outputDir = path.dirname(outputFilePath);
+
+        this.outputChannel.appendLine(`Exporting: ${fileUri.fsPath}`);
+        this.outputChannel.appendLine(`  -> ${outputFilePath}`);
+        this.outputChannel.appendLine(`  Relative: ${relativePath}`);
 
         await this.ensureDirectoryExists(outputDir);
 
@@ -245,9 +332,10 @@ export class DiagnosticsExporter {
 
                 try {
                     await vscode.workspace.fs.delete(uri);
-                    console.log(`Deleted diagnostics file: ${outputFilePath}`);
+                    this.outputChannel.appendLine(`Deleted: ${outputFilePath}`);
                 } catch (error) {
                     // File might not exist, which is fine
+                    this.outputChannel.appendLine(`Delete failed (file may not exist): ${outputFilePath}`);
                 }
             }
         }
@@ -272,5 +360,6 @@ export class DiagnosticsExporter {
             clearTimeout(this.debounceTimer);
         }
         this.disposables.forEach(d => d.dispose());
+        this.outputChannel.dispose();
     }
 }

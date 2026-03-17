@@ -34,7 +34,7 @@ your-project/
 
 This approach is **ideal for AI coding assistants** because:
 - **Targeted reads**: AI only reads diagnostics for the file it's analyzing
-- **Always fresh**: Files are overwritten on change, no stale data
+- **Stays current**: Files are overwritten when diagnostics change; deleted when issues are resolved
 - **Scales better**: No huge aggregated file for large projects
 - **Natural mapping**: Matches how AI tools think (file by file)
 
@@ -101,7 +101,7 @@ File: `.diagnostics/src/services/userService.ts.json`
       "message": "Cannot find name 'foo'",
       "line": 42,
       "column": 10,
-      "code": "2304"
+      "code": 2304
     },
     {
       "source": "eslint",
@@ -220,7 +220,7 @@ npm run package
 # or
 vsce package
 
-# Output: diagnostics-export-0.1.0.vsix
+# Output: diagnostics-export-0.2.6.vsix
 ```
 
 ### Installing Locally
@@ -231,11 +231,11 @@ After building the VSIX:
 1. Open VS Code
 2. Go to Extensions (`Ctrl+Shift+X`)
 3. Click `...` menu → `Install from VSIX...`
-4. Select `diagnostics-export-0.1.0.vsix`
+4. Select `diagnostics-export-0.2.6.vsix`
 
 **Option 2: Via Command Line**
 ```bash
-code --install-extension diagnostics-export-0.1.0.vsix
+code --install-extension diagnostics-export-0.2.6.vsix
 ```
 
 ### Running the Extension in Development Mode
@@ -312,6 +312,34 @@ npm run publish
 None at this time. Please report issues on the GitHub repository.
 
 ## Release Notes
+
+### 0.2.5
+
+**Critical bug fixes:**
+- Fixed recursive export bug where `.diagnostics/` folder files were being exported, creating `.diagnostics/.diagnostics/` paths
+- Files inside `.diagnostics/` folder are now explicitly excluded from export
+
+### 0.2.4
+
+**Bug fixes:**
+- Fixed infinite export loop where same files were exported repeatedly
+- Added export lock to prevent concurrent exports
+- Added rate limiting (1 second minimum interval between exports of same file)
+- Improved logging to show skipped duplicate exports
+
+### 0.2.3
+
+**Debugging improvements:**
+- Added Output channel logging for troubleshooting export issues
+- View logs in Output panel → "Diagnostics Export"
+- Shows detailed export activity (source files, output paths, relative paths)
+
+### 0.2.2
+
+**Important: Clean install required**
+- Added workspace and file scheme filtering to prevent exporting non-workspace files
+- Fixed default output path in `openExportFolder` command
+- **Note:** If upgrading from 0.1.0 or 0.2.0, uninstall the old version first to avoid conflicts
 
 ### 0.2.1
 
